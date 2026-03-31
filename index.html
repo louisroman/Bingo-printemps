@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo du Printemps</title>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --grad-start: #74c69d;
+    --grad-mid: #52b788;
+    --grad-end: #2d6a4f;
+    --cell-bg: #ffffff;
+    --cell-checked: #265a42;
+    --cell-checked-text: #d8f3dc;
+    --text-dark: #1b4332;
+    --title-color: #1b4332;
+    --shadow: 0 8px 32px rgba(27, 67, 50, 0.2);
+    --cell-radius: 0px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #f0fdf4 0%, #dcfce7 25%, #74c69d 65%, #2d6a4f 100%);
+    font-family: 'DM Sans', sans-serif;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  /* Entry screen */
+  #entry-screen {
+    text-align: center;
+    animation: fadeIn 0.6s ease;
+  }
+
+  #entry-screen h1 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    color: var(--title-color);
+    margin-bottom: 8px;
+    text-shadow: 0 2px 12px rgba(27,67,50,0.12);
+  }
+
+  #entry-screen p {
+    color: var(--text-dark);
+    font-size: 1.1rem;
+    margin-bottom: 28px;
+    opacity: 0.8;
+  }
+
+  .card-select-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .card-select-btn {
+    background: rgba(255,255,255,0.85);
+    border: 2px solid rgba(27,67,50,0.15);
+    border-radius: 12px;
+    padding: 12px 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+  }
+
+  .card-select-btn:hover {
+    background: var(--cell-checked);
+    color: #d8f3dc;
+    border-color: var(--cell-checked);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(27,67,50,0.25);
+  }
+
+  /* Bingo card screen */
+  #bingo-screen {
+    display: none;
+    width: 100%;
+    max-width: 540px;
+    animation: slideUp 0.5s ease;
+  }
+
+  .bingo-header {
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .bingo-header h1 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: clamp(1.6rem, 5vw, 2.8rem);
+    color: var(--title-color);
+    text-shadow: 0 2px 12px rgba(27,67,50,0.1);
+    line-height: 1.1;
+  }
+
+  .bingo-header .card-id {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(27,67,50,0.55);
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .bingo-card {
+    background: linear-gradient(180deg, var(--grad-start), var(--grad-end));
+    border-radius: 18px;
+    padding: 6px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .bingo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+
+  .bingo-cell {
+    background: var(--cell-bg);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6px;
+    font-size: clamp(0.65rem, 2.2vw, 0.86rem);
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--cell-radius);
+    line-height: 1.2;
+    word-break: break-word;
+    hyphens: auto;
+    overflow: hidden;
+  }
+
+  .bingo-cell:hover:not(.checked) {
+    background: rgba(255,255,255,0.8);
+    transform: scale(1.03);
+  }
+
+  .bingo-cell.checked {
+    background: var(--cell-checked);
+    color: var(--cell-checked-text);
+    transform: scale(0.97);
+  }
+
+  .bingo-cell.checked::after {
+    content: '✓';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 0.7rem;
+    opacity: 0.6;
+  }
+
+  /* Bingo win animation */
+  .bingo-cell.win-cell {
+    animation: winPulse 0.6s ease infinite alternate;
+    background: #f9a825 !important;
+    color: #1a1a1a !important;
+  }
+
+  @keyframes winPulse {
+    from { transform: scale(0.97); }
+    to { transform: scale(1.04); box-shadow: 0 0 20px rgba(249, 168, 37, 0.6); }
+  }
+
+  .win-banner {
+    display: none;
+    text-align: center;
+    margin-top: 20px;
+    animation: bounceIn 0.6s ease;
+  }
+
+  .win-banner.show {
+    display: block;
+  }
+
+  .win-banner h2 {
+    font-family: 'Dela Gothic One', cursive;
+    font-size: 2.4rem;
+    color: #f9a825;
+    text-shadow: 0 2px 15px rgba(249,168,37,0.4);
+    letter-spacing: 2px;
+  }
+
+  .win-banner p {
+    color: rgba(255,255,255,0.85);
+    margin-top: 4px;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.35);
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(4px);
+  }
+
+  .btn:hover {
+    background: rgba(255,255,255,0.35);
+    transform: translateY(-1px);
+  }
+
+  /* Confetti */
+  .confetti-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    overflow: hidden;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    opacity: 0;
+    animation: confettiFall 3s ease-in forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.5); }
+    60% { transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Responsive */
+  @media (max-width: 400px) {
+    .bingo-grid { gap: 3px; }
+    .bingo-card { padding: 4px; border-radius: 14px; }
+    .bingo-cell { padding: 4px; font-size: 0.62rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="entry-screen">
+  <h1>Bingo du Printemps 🌸</h1>
+  <p>Choisis ta grille pour commencer</p>
+  <div class="card-select-grid" id="cardSelectGrid"></div>
+</div>
+
+<div id="bingo-screen">
+  <div class="bingo-header">
+    <h1>Bingo du Printemps 🌸</h1>
+    <div class="card-id" id="cardIdLabel"></div>
+  </div>
+  <div class="bingo-card">
+    <div class="bingo-grid" id="bingoGrid"></div>
+  </div>
+  <div class="win-banner" id="winBanner">
+    <h2>🎉 BINGO ! 🎉</h2>
+    <p>Tu as complété une ligne !</p>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="resetCard()">🔄 Réinitialiser</button>
+    <button class="btn" onclick="goBack()">← Changer de grille</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+// ===== 20 GRILLES BINGO DU PRINTEMPS =====
+const cards = {
+  "001": [
+    "Brets", "Remerciement pour la signature des documents par email", "IDFM", "Yann remercie des équipes mais pas toutes",
+    "Meanings", "Quentin puis Amandine posent une question", "Back office", "Amandine puis Quentin posent une question",
+    "Abu Dhabi", "\"Bravo\" pour IDFM", "JM", "Thomas fait rire",
+    "Femmes en Mouvement", "Machine a café pendant une prise de parole", "IA x3", "5x merci de Yann"
+  ],
+  "002": [
+    "Claude", "6x personnes s'assoient par terre avec Louis", "Yann part dans une métaphore trop longue", "\"Une énergie\"",
+    "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Structurant", "Bug technique micro", "Ref à Thomas sur la levée de fond", "City",
+    "Brésil", "Yann fait référence à des notes qu'il ne lit pas", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "003": [
+    "Brets", "Remerciement pour la signature des documents par email", "Meanings", "Quentin puis Amandine posent une question",
+    "Abu Dhabi", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "Claude", "6x personnes s'assoient par terre avec Louis", "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH",
+    "Structurant", "Bug technique micro", "Brésil", "Yann fait référence à des notes qu'il ne lit pas"
+  ],
+  "004": [
+    "IDFM", "Yann remercie des équipes mais pas toutes", "Back office", "Amandine puis Quentin posent une question",
+    "JM", "Thomas fait rire", "IA x3", "5x merci de Yann",
+    "Yann part dans une métaphore trop longue", "\"Une énergie\"", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Ref à Thomas sur la levée de fond", "City", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "005": [
+    "Brets", "Yann remercie des équipes mais pas toutes", "IDFM", "Quentin puis Amandine posent une question",
+    "Abu Dhabi", "Thomas fait rire", "JM", "Machine a café pendant une prise de parole",
+    "Claude", "\"Une énergie\"", "Yann part dans une métaphore trop longue", "Olivia fait un point RH",
+    "Structurant", "City", "Ref à Thomas sur la levée de fond", "Yann fait référence à des notes qu'il ne lit pas"
+  ],
+  "006": [
+    "Meanings", "Remerciement pour la signature des documents par email", "Back office", "Amandine puis Quentin posent une question",
+    "Femmes en Mouvement", "\"Bravo\" pour IDFM", "IA x3", "5x merci de Yann",
+    "3 personnes se servent à manger pendant le discours", "6x personnes s'assoient par terre avec Louis", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Brésil", "Bug technique micro", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "007": [
+    "Brets", "Remerciement pour la signature des documents par email", "Back office", "Quentin puis Amandine posent une question",
+    "JM", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "IA x3", "\"Une énergie\"", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Ref à Thomas sur la levée de fond", "Yann fait référence à des notes qu'il ne lit pas", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "008": [
+    "IDFM", "Yann remercie des équipes mais pas toutes", "Meanings", "Amandine puis Quentin posent une question",
+    "Abu Dhabi", "Thomas fait rire", "Claude", "5x merci de Yann",
+    "Yann part dans une métaphore trop longue", "6x personnes s'assoient par terre avec Louis", "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH",
+    "Structurant", "Bug technique micro", "Brésil", "City"
+  ],
+  "009": [
+    "Brets", "Remerciement pour la signature des documents par email", "IDFM", "Amandine puis Quentin posent une question",
+    "Femmes en Mouvement", "\"Bravo\" pour IDFM", "IA x3", "5x merci de Yann",
+    "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Brésil", "Yann fait référence à des notes qu'il ne lit pas", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "010": [
+    "Meanings", "Yann remercie des équipes mais pas toutes", "Back office", "Quentin puis Amandine posent une question",
+    "Abu Dhabi", "Thomas fait rire", "JM", "Machine a café pendant une prise de parole",
+    "Claude", "6x personnes s'assoient par terre avec Louis", "Yann part dans une métaphore trop longue", "\"Une énergie\"",
+    "Structurant", "Bug technique micro", "Ref à Thomas sur la levée de fond", "City"
+  ],
+  "011": [
+    "Brets", "Remerciement pour la signature des documents par email", "Meanings", "Quentin puis Amandine posent une question",
+    "JM", "Thomas fait rire", "IA x3", "5x merci de Yann",
+    "Yann part dans une métaphore trop longue", "\"Une énergie\"", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Ref à Thomas sur la levée de fond", "City", "Brésil", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "012": [
+    "IDFM", "Yann remercie des équipes mais pas toutes", "Back office", "Amandine puis Quentin posent une question",
+    "Abu Dhabi", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "Claude", "6x personnes s'assoient par terre avec Louis", "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH",
+    "Structurant", "Bug technique micro", "Yann fait référence au fait qu'il se répète", "Yann fait référence à des notes qu'il ne lit pas"
+  ],
+  "013": [
+    "Brets", "Remerciement pour la signature des documents par email", "Back office", "Yann remercie des équipes mais pas toutes",
+    "Abu Dhabi", "Machine a café pendant une prise de parole", "IA x3", "5x merci de Yann",
+    "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Ref à Thomas sur la levée de fond", "Yann fait référence à des notes qu'il ne lit pas", "Brésil", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "014": [
+    "IDFM", "Quentin puis Amandine posent une question", "Meanings", "Amandine puis Quentin posent une question",
+    "JM", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Thomas fait rire",
+    "Claude", "6x personnes s'assoient par terre avec Louis", "Yann part dans une métaphore trop longue", "\"Une énergie\"",
+    "Structurant", "Bug technique micro", "Yann fait référence au fait qu'il se répète", "City"
+  ],
+  "015": [
+    "Brets", "Yann remercie des équipes mais pas toutes", "IDFM", "Quentin puis Amandine posent une question",
+    "Meanings", "\"Bravo\" pour IDFM", "Yann part dans une métaphore trop longue", "5x merci de Yann",
+    "3 personnes se servent à manger pendant le discours", "\"Une énergie\"", "Ref à Thomas sur la levée de fond", "Bug technique micro",
+    "Brésil", "City", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "016": [
+    "Back office", "Remerciement pour la signature des documents par email", "Abu Dhabi", "Amandine puis Quentin posent une question",
+    "JM", "Thomas fait rire", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "IA x3", "6x personnes s'assoient par terre avec Louis", "Claude", "Olivia fait un point RH",
+    "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient", "Structurant", "Yann fait référence à des notes qu'il ne lit pas"
+  ],
+  "017": [
+    "Brets", "Yann remercie des équipes mais pas toutes", "Meanings", "Amandine puis Quentin posent une question",
+    "Abu Dhabi", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "Yann part dans une métaphore trop longue", "\"Une énergie\"", "\"Je sais que vous avez faim\"", "Conflit au Moyen-Orient",
+    "Structurant", "Bug technique micro", "Brésil", "Yann fait référence à des notes qu'il ne lit pas"
+  ],
+  "018": [
+    "IDFM", "Remerciement pour la signature des documents par email", "Back office", "Quentin puis Amandine posent une question",
+    "JM", "Thomas fait rire", "IA x3", "5x merci de Yann",
+    "Claude", "6x personnes s'assoient par terre avec Louis", "3 personnes se servent à manger pendant le discours", "Olivia fait un point RH",
+    "Ref à Thomas sur la levée de fond", "City", "Yann fait référence au fait qu'il se répète", "Yann oublie un point important et ne retrouve pas l'info"
+  ],
+  "019": [
+    "Brets", "Remerciement pour la signature des documents par email", "IDFM", "Quentin puis Amandine posent une question",
+    "Back office", "\"Bravo\" pour IDFM", "Femmes en Mouvement", "Machine a café pendant une prise de parole",
+    "IA x3", "6x personnes s'assoient par terre avec Louis", "\"Je sais que vous avez faim\"", "Olivia fait un point RH",
+    "Ref à Thomas sur la levée de fond", "Yann fait référence à des notes qu'il ne lit pas", "Yann fait référence au fait qu'il se répète", "Bug technique micro"
+  ],
+  "020": [
+    "Meanings", "Yann remercie des équipes mais pas toutes", "Abu Dhabi", "Amandine puis Quentin posent une question",
+    "JM", "Thomas fait rire", "Claude", "5x merci de Yann",
+    "Yann part dans une métaphore trop longue", "\"Une énergie\"", "3 personnes se servent à manger pendant le discours", "Conflit au Moyen-Orient",
+    "Structurant", "City", "Brésil", "Yann oublie un point important et ne retrouve pas l'info"
+  ]
+};
+
+let currentCard = null;
+let checkedCells = new Set();
+let hasWon = false;
+
+// Win lines for a 4x4 grid
+const winLines = [
+  // Rows
+  [0,1,2,3], [4,5,6,7], [8,9,10,11], [12,13,14,15],
+  // Columns
+  [0,4,8,12], [1,5,9,13], [2,6,10,14], [3,7,11,15],
+  // Diagonals
+  [0,5,10,15], [3,6,9,12]
+];
+
+// Build entry screen
+function buildEntryScreen() {
+  const grid = document.getElementById('cardSelectGrid');
+  grid.innerHTML = '';
+  Object.keys(cards).forEach(id => {
+    const btn = document.createElement('button');
+    btn.className = 'card-select-btn';
+    btn.textContent = id;
+    btn.onclick = () => showCard(id);
+    grid.appendChild(btn);
+  });
+}
+
+// Check URL param
+function checkUrlParam() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (id && cards[id]) {
+    showCard(id);
+  }
+}
+
+function showCard(id) {
+  currentCard = id;
+  checkedCells = new Set();
+  hasWon = false;
+
+  document.getElementById('entry-screen').style.display = 'none';
+  document.getElementById('bingo-screen').style.display = 'block';
+  document.getElementById('bingo-screen').style.animation = 'none';
+  requestAnimationFrame(() => {
+    document.getElementById('bingo-screen').style.animation = 'slideUp 0.5s ease';
+  });
+  document.getElementById('cardIdLabel').textContent = `Grille #${id}`;
+  document.getElementById('winBanner').classList.remove('show');
+
+  // Update URL without reload
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('id', id);
+    history.replaceState(null, '', url);
+  } catch(e) { /* iframe context */ }
+
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('bingoGrid');
+  grid.innerHTML = '';
+  const items = cards[currentCard];
+
+  items.forEach((text, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'bingo-cell';
+    cell.textContent = text;
+    cell.dataset.index = i;
+    if (checkedCells.has(i)) cell.classList.add('checked');
+    cell.onclick = () => toggleCell(i, cell);
+    grid.appendChild(cell);
+  });
+}
+
+function toggleCell(index, cellEl) {
+  if (checkedCells.has(index)) {
+    checkedCells.delete(index);
+    cellEl.classList.remove('checked');
+    cellEl.classList.remove('win-cell');
+    hasWon = false;
+    document.getElementById('winBanner').classList.remove('show');
+    document.querySelectorAll('.bingo-cell').forEach(c => c.classList.remove('win-cell'));
+    checkWin();
+  } else {
+    checkedCells.add(index);
+    cellEl.classList.add('checked');
+    cellEl.style.animation = 'none';
+    requestAnimationFrame(() => { cellEl.style.animation = ''; });
+    checkWin();
+  }
+}
+
+function checkWin() {
+  for (const line of winLines) {
+    if (line.every(i => checkedCells.has(i))) {
+      if (!hasWon) {
+        hasWon = true;
+        document.getElementById('winBanner').classList.add('show');
+        launchConfetti();
+      }
+      line.forEach(i => {
+        const cell = document.querySelector(`.bingo-cell[data-index="${i}"]`);
+        if (cell) cell.classList.add('win-cell');
+      });
+    }
+  }
+}
+
+function resetCard() {
+  checkedCells = new Set();
+  hasWon = false;
+  document.getElementById('winBanner').classList.remove('show');
+  renderGrid();
+}
+
+function goBack() {
+  document.getElementById('bingo-screen').style.display = 'none';
+  document.getElementById('entry-screen').style.display = 'block';
+  try {
+    const url = new URL(window.location);
+    url.searchParams.delete('id');
+    history.replaceState(null, '', url);
+  } catch(e) { /* iframe context */ }
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#f9a825', '#1b4332', '#74c69d', '#ff6b9d', '#fff', '#52b788', '#ffd93d', '#ffb3c6'];
+  for (let i = 0; i < 60; i++) {
+    const confetti = document.createElement('div');
+    confetti.className = 'confetti';
+    confetti.style.left = Math.random() * 100 + '%';
+    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+    confetti.style.animationDelay = Math.random() * 1.5 + 's';
+    confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+    confetti.style.width = (6 + Math.random() * 10) + 'px';
+    confetti.style.height = (6 + Math.random() * 10) + 'px';
+    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+    container.appendChild(confetti);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 4000);
+}
+
+// Init
+buildEntryScreen();
+checkUrlParam();
+</script>
+</body>
+</html>
